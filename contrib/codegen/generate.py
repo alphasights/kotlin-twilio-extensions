@@ -106,12 +106,9 @@ def __main__():
     print(fmt_preamble(), file=output)
 
     # The DSLTwiML namespace
-    print(fmt_package_layout(package_layout_code), file=output)
+    print(fmt_dsl_definition(package_layout_code), file=output)
 
-    # The TwilioBuilders constructor namespace
-    print(fmt_constructors(constructor_code), file=output)
-
-    # The extenions themselves
+    # The extenions
     print("\n".join(extension_code)+ "\n", file=output)
 
     # Finally, a list of types that have been declared as a valid child,
@@ -155,7 +152,7 @@ def fun_extension(typespec, acceptor, declare, consume):
     ''' Build an extension to construct a child under the given parent class '''
     sep = ", " if declare else ""
     return f"""
-    inline fun {acceptor.qualified}.Builder.{camel(typespec.name)}({declare}{sep}f: Takes<{typespec.dsl_builder}> = {{}}): {acceptor.qualified}.Builder = this.{camel(typespec.name)}(TwilioBuilders.{camel(typespec.name)}({consume}{sep}f))
+    inline fun {acceptor.qualified}.Builder.{camel(typespec.name)}({declare}{sep}f: Takes<{typespec.dsl_builder}> = {{}}): {acceptor.qualified}.Builder = this.{camel(typespec.name)}({typespec.dsl_constructor}({consume}{sep}f))
     """.strip()
 
 def class_marked_with_constructors(typespec, constructors):
@@ -169,25 +166,14 @@ def class_marked_with_constructors(typespec, constructors):
     """
 
 def fmt_preamble():
-    ''' The code after the import lines and before the constructors '''
+    ''' The code after the import lines and before the DSL definition '''
     return """
 typealias Takes<F> = F.() -> Unit
 @DslMarker annotation class TwimlMarker
 """
 
-def fmt_constructors(constructor_list):
-    ''' The code after the preamble, and before the extensions '''
-    c = "\n" + "\n".join(constructor_list)
-    return f"""
-class TwilioBuilders {{
-
-    companion object {{{c}
-
-    }}
-}}
-"""
-
-def fmt_package_layout(package_layout):
+def fmt_dsl_definition(package_layout):
+    ''' The DSL definition itself '''
 
     lines = []
     for package, code_bits in package_layout.items():
@@ -260,6 +246,12 @@ class TypeSpec(namedtuple("TypeSpec", ("package", "name"))):
     def qualified(self):
         sep = "." if self.package else ""
         return f"com.twilio.twiml.{self.package}{sep}{self.name}"
+
+    @property
+    def dsl_constructor(self):
+        p = self.package.title()
+        sep = "." if p else ""
+        return f"DSLTwiML.{p}{sep}{camel(self.name)}"
 
     @property
     def dsl_builder(self):
