@@ -42,7 +42,7 @@ task generate(type:Exec) {
 
     workingDir '.'
 
-    commandLine 'python3', 'contrib/codegen/generate.py', 'contrib/codegen/layout.json', outputDir + "boop.kt"
+    commandLine 'python3', 'contrib/codegen/generate.py', 'contrib/codegen/layout.json', outputDir + "KotlinTwimlDsl.kt"
 
 }
 
