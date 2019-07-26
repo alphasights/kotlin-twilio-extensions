@@ -1,5 +1,17 @@
 {
   "": {
+    "FaxResponse": {
+      "constructors": [[]],
+      "children": [
+        "fax.Receive"
+      ]
+    },
+    "MessagingResponse": {
+      "constructors": [[]],
+      "children": [
+        "messaging.Message"
+      ]
+    },
     "VoiceResponse": {
       "constructors": [[]],
       "children": [
@@ -8,6 +20,26 @@
           "voice.Play", "voice.Queue", "voice.Record", "voice.Redirect",
           "voice.Reject", "voice.Say", "voice.Sms"
       ]
+    }
+  },
+  "fax": {
+    "Receive": {
+      "constructors": [[]],
+      "children": []
+    }
+  },
+  "messaging": {
+    "Body": {
+      "constructors": [["message:String"]],
+      "children": []
+    },
+    "Media": {
+      "constructors": [["url:String"], ["url:java.net.URI"]],
+      "children": []
+    },
+    "Message": {
+      "constructors": [[], ["body:String"]],
+      "children": ["Body", "Media"]
     }
   },
   "voice": {

@@ -193,7 +193,9 @@ def fmt_dsl_definition(package_layout):
     return f"""
 object DSLTwiML {{
 {c}
-}}"""
+}}
+
+"""
 
 def constructor_argstrings(args):
     ''' Produce the argstrings for the type. Args is a list of strings formatted
