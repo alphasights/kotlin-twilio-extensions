@@ -1,0 +1,145 @@
+{
+  "": {
+    "VoiceResponse": {
+      "constructors": [[]],
+      "children": [
+          "Connect", "Dial", "Echo", "Enqueue", "Gather", "Hangup",
+          "Leave", "Pause", "Play", "Queue", "Record", "Redirect",
+          "Reject", "Say", "Sms"
+      ]
+    }
+  },
+  ".voice": {
+    "Client": {
+      "constructors": [["name:String"]],
+      "children": []
+    },
+    "Conference": {
+      "constructors": [["name:String"]],
+      "children": []
+    },
+    "Connect": {
+      "constructors": [[]],
+      "children": ["Room"]
+    },
+    "Dial": {
+      "constructors": [[],["number:String"]],
+      "children": ["Client", "Conference", "Number", "Queue", "Sim", "Sip"]
+    },
+    "Echo": {
+      "constructors": [[]],
+      "children": []
+    },
+    "Enqueue": {
+      "constructors": [[], ["name:String"]],
+      "children": ["Task"]
+    },
+    "Gather": {
+      "constructors": [[]],
+      "children": ["Pause", "Play","Say"]
+    },
+    "Hangup": {
+      "constructors": [[]],
+      "children": []
+    },
+    "Leave": {
+      "constructors": [[]],
+      "children": []
+    },
+    "Number": {
+      "constructors": [["phoneNumber:String"],["phoneNumber:com.twilio.type.PhoneNumber"]],
+      "children": []
+    },
+    "Pause": {
+      "constructors": [[]],
+      "children": []
+    },
+    "Play": {
+      "constructors": [[], ["url:String"], ["url:java.net.URI"]],
+      "children": []
+    },
+    "Queue": {
+      "constructors": [["name:String"]],
+      "children": []
+    },
+    "Record": {
+      "constructors": [[]],
+      "children": []
+    },
+    "Redirect": {
+      "constructors": [["url:String"], ["url:java.net.URI"]],
+      "children": []
+    },
+    "Reject": {
+      "constructors": [[]],
+      "children": []
+    },
+    "Room": {
+      "constructors": [["name:String"]],
+      "children": []
+    },
+    "Say": {
+      "constructors": [[], ["message:String"]],
+      "children": [
+        "SsmlBreak", "SsmlEmphasis", "SsmlLang", "SsmlP", "SsmlPhoneme",
+        "SsmlProsody","SsmlS", "SsmlSayAs", "SsmlSub", "SsmlW"
+      ]
+    },
+    "Sim": {
+      "constructors": [["simId:String"]],
+      "children": []
+    },
+    "Sip": {
+      "constructors": [["sipUrl:String"], ["sipUrl:java.net.URI"]],
+      "children": []
+    },
+    "Sms": {
+      "constructors": [["message:String"]],
+      "children": []
+    },
+    "SsmlBreak": {
+      "constructors": [[]],
+      "children": []
+    },
+    "SsmlEmphasis": {
+      "constructors": [["words:String"]],
+      "children": []
+    },
+    "SsmlLang": {
+      "constructors": [["words:String"]],
+      "children": []
+    },
+    "SsmlP": {
+      "constructors": [["words:String"]],
+      "children": []
+    },
+    "SsmlPhoneme": {
+      "constructors": [["words:String"]],
+      "children": []
+    },
+    "SsmlProsody": {
+      "constructors": [["words:String"]],
+      "children": []
+    },
+    "SsmlS": {
+      "constructors": [["words:String"]],
+      "children": []
+    },
+    "SsmlSayAs": {
+      "constructors": [["words:String"]],
+      "children": []
+    },
+    "SsmlSub": {
+      "constructors": [["words:String"]],
+      "children": []
+    },
+    "SsmlW": {
+      "constructors": [["words:String"]],
+      "children": []
+    },
+    "Task": {
+      "constructors": [["body:String"]],
+      "children": []
+    }
+  }
+}
