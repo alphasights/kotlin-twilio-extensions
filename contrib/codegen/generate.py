@@ -73,18 +73,25 @@ def __main__():
     extension_code = []
     marked_class_code = []
 
+    package_layout_code = defaultdict(list)
+
     # Build out the code fragments
     for typespec, _constructor in constructors.items():
         for argstrings in _constructor:
+            package_layout_code[typespec.package].append(fun_constructor(typespec, argstrings.declare, argstrings.consume))
             constructor_code.append(fun_constructor(typespec, argstrings.declare, argstrings.consume))
             for acceptor in acceptors[typespec]:
                 extension_code.append(fun_extension(typespec, acceptor, argstrings.declare, argstrings.consume))
+        package_layout_code[typespec.package].append(class_marked_with_constructors(typespec, _constructor))
         marked_class_code.append(class_marked_with_constructors(typespec, _constructor))
 
     imports.sort()
     constructor_code.sort()
     extension_code.sort()
     marked_class_code.sort()
+
+    for k, v in package_layout_code.items():
+        v.sort()
 
     # Generate the code!
 
@@ -95,6 +102,9 @@ def __main__():
 
     # Boilerplate code and type aliases
     print(fmt_preamble(), file=output)
+
+    # The DSLTwiML namespace
+    print(fmt_package_layout(package_layout_code), file=output)
 
     # The TwilioBuilders constructor namespace
     print(fmt_constructors(constructor_code), file=output)
@@ -176,6 +186,28 @@ class TwilioBuilders {{
     }}
 }}
 """
+
+def fmt_package_layout(package_layout):
+
+    lines = []
+    for package, code_bits in package_layout.items():
+        code = _fmt_inside_package(code_bits)
+        if package:
+            pp = package.title()
+            value = f"""object {pp} {{{code}}}"""
+        else:
+            value = f"""{code}"""
+        lines.append(value)
+    c = "\n".join(lines)
+
+    return f"""
+object DSLTwiML {{
+{c}
+}}"""
+
+def _fmt_inside_package(code_bits):
+    return "\n".join(code_bits)
+
 
 def fmt_marked_classes(marked_class_list):
     ''' The code after the extensions, representing DSL-marked versions of the classes '''
