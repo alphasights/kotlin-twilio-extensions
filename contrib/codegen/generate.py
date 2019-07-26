@@ -50,6 +50,9 @@ def __main__():
     # n.b. acceptors is an inverted version of "children" from the data file.
     acceptors = defaultdict(list)
 
+    # The package name for the given type
+    packages = defaultdict(str)
+
     # Build out the constructors and acceptors dictionaries
     for package, types in builders.items():
         for typename, info in types.items():
@@ -58,11 +61,13 @@ def __main__():
                 constructors[typename].append(constructor_argstrings(constructor))
             for acceptor in info["children"]:
                 acceptors[acceptor].append(typename)
+            packages[typename] = package
 
     # Code fragments for the constructor functions and the extension functions
     # respectively
     constructor_code = []
     extension_code = []
+    marked_class_code = []
 
     # Build out the code fragments
     for typename, _constructor in constructors.items():
@@ -70,10 +75,12 @@ def __main__():
             constructor_code.append(fun_constructor(typename, argstrings.declare, argstrings.consume))
             for acceptor in acceptors[typename]:
                 extension_code.append(fun_extension(typename, acceptor, argstrings.declare, argstrings.consume))
+        marked_class_code.append(class_marked_with_constructors(typename, packages[typename], _constructor))
 
     imports.sort()
     constructor_code.sort()
     extension_code.sort()
+    marked_class_code.sort()
 
     # Generate the code!
 
@@ -90,6 +97,9 @@ def __main__():
 
     # The extenions themselves
     print("\n".join(extension_code)+ "\n", file=output)
+
+    # The Marked DSL classes
+    print(fmt_marked_classes(marked_class_code), file=output)
 
     # Finally, a list of types that have been declared as a valid child,
     # but have not had code generated.
@@ -117,6 +127,12 @@ def fun_constructor(typename, declare, consume):
     inline fun {camel(typename)}({declare}{sep}f: Takes<{typename}.Builder> = {{}}): {typename} = {typename}.Builder({consume}).apply(f).build()
     """.strip()
 
+def fun_class_marked_constructor(typename, declare, consume):
+    ''' Build a constructor function for the given class '''
+    return f"""
+    constructor ({declare}): super({consume})
+    """.strip()
+
 def fun_extension(typename, acceptor, declare, consume):
     ''' Build an extension to construct a child under the given parent class '''
     sep = ", " if declare else ""
@@ -124,11 +140,23 @@ def fun_extension(typename, acceptor, declare, consume):
     inline fun {acceptor}.Builder.{camel(typename)}({declare}{sep}f: Takes<{typename}.Builder> = {{}}): {acceptor}.Builder = this.{camel(typename)}(TwilioBuilders.{camel(typename)}({consume}{sep}f))
     """.strip()
 
+def class_marked_with_constructors(typename, package, constructors):
+    ''' Build a DSL-marked class to ensure TwiML verbs are appropriately restricted. '''
+
+    constructor_code = "\n            ".join(fun_class_marked_constructor(typename, i, j) for (i, j) in constructors)
+
+    return f"""
+    object {typename} {{
+        @TwimlMarker class Builder : com.twilio.twiml{package}.{typename}.Builder {{
+            {constructor_code}
+        }}
+    }}"""
 
 def fmt_preamble():
     ''' The code after the import lines and before the constructors '''
     return """
 typealias Takes<F> = F.() -> Unit
+@DslMarker annotation class TwimlMarker
 """
 
 def fmt_constructors(constructor_list):
@@ -142,6 +170,16 @@ class TwilioBuilders {{
     }}
 }}
 """
+
+def fmt_marked_classes(marked_class_list):
+    ''' The code after the extensions, representing DSL-marked versions of the classes '''
+    c = "\n        " + "\n        ".join(marked_class_list)
+
+    return f"""
+object Marked {{{c}
+}}
+    """
+
 
 def constructor_argstrings(args):
     ''' Produce the argstrings for the type. Args is a list of strings formatted
