@@ -11,6 +11,7 @@ repositories {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+    compile group: "com.twilio.sdk", name: "twilio", version: "7.27.0"
 }
 
 compileKotlin {
