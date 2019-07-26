@@ -37,13 +37,15 @@ import json
 from collections import defaultdict
 from collections import Counter
 from collections import namedtuple
+from io import StringIO
 
 from pprint import pprint
 
 def __main__():
 
     builders = json.load(open(sys.argv[1]))
-    output = open(sys.argv[2], "w") if len(sys.argv) > 2 else sys.stdout
+    output_file = open(sys.argv[2], "w") if len(sys.argv) > 2 else sys.stdout
+    output = StringIO()
 
     imports = []
     # Key-value mapping: Key = Builder to construct, value = list(arglist format)
@@ -112,15 +114,15 @@ def __main__():
     # The extenions themselves
     print("\n".join(extension_code)+ "\n", file=output)
 
-    # The Marked DSL classes
-    print(fmt_marked_classes(marked_class_code), file=output)
-
     # Finally, a list of types that have been declared as a valid child,
     # but have not had code generated.
     missing = list(set(acceptors) - set(constructors))
     missing.sort()
     print("\n", file=output)
     print(f"/** MISSING: {missing} */", file=output)
+
+    reformatted = refmt_kotlin(output.getvalue())
+    output_file.write(reformatted)
 
 
 def camel(a):
@@ -140,33 +142,31 @@ def fun_constructor(typespec, declare, consume):
     ''' Build a constructor function for the given class '''
     sep = ", " if declare else ""
     return f"""
-    inline fun {camel(typespec.name)}({declare}{sep}f: Takes<Marked.{typespec.name}.Builder> = {{}}): {typespec.qualified} = Marked.{typespec.name}.Builder({consume}).apply(f).build()
+    inline fun {camel(typespec.name)}({declare}{sep}f: Takes<{typespec.dsl_builder}> = {{}}): {typespec.qualified} = {typespec.dsl_builder}({consume}).apply(f).build()
     """.strip()
 
 def fun_class_marked_constructor(declare, consume):
     ''' Build a constructor function for the given class '''
     return f"""
-    constructor ({declare}): super({consume})
+    constructor ({declare}) : super({consume})
     """.strip()
 
 def fun_extension(typespec, acceptor, declare, consume):
     ''' Build an extension to construct a child under the given parent class '''
     sep = ", " if declare else ""
     return f"""
-    inline fun {acceptor.qualified}.Builder.{camel(typespec.name)}({declare}{sep}f: Takes<Marked.{typespec.name}.Builder> = {{}}): {acceptor.qualified}.Builder = this.{camel(typespec.name)}(TwilioBuilders.{camel(typespec.name)}({consume}{sep}f))
+    inline fun {acceptor.qualified}.Builder.{camel(typespec.name)}({declare}{sep}f: Takes<{typespec.dsl_builder}> = {{}}): {acceptor.qualified}.Builder = this.{camel(typespec.name)}(TwilioBuilders.{camel(typespec.name)}({consume}{sep}f))
     """.strip()
 
 def class_marked_with_constructors(typespec, constructors):
     ''' Build a DSL-marked class to ensure TwiML verbs are appropriately restricted. '''
 
-    constructor_code = "\n            ".join(fun_class_marked_constructor(i, j) for (i, j) in constructors)
+    constructor_code = "\n".join(fun_class_marked_constructor(i, j) for (i, j) in constructors)
 
-    return f"""
-    object {typespec.name} {{
-        @TwimlMarker class Builder : {typespec.qualified}.Builder {{
-            {constructor_code}
-        }}
-    }}"""
+    return f"""@TwimlMarker class {typespec.name} : {typespec.qualified}.Builder {{
+        {constructor_code}
+    }}
+    """
 
 def fmt_preamble():
     ''' The code after the import lines and before the constructors '''
@@ -177,7 +177,7 @@ typealias Takes<F> = F.() -> Unit
 
 def fmt_constructors(constructor_list):
     ''' The code after the preamble, and before the extensions '''
-    c = "\n        " + "\n        ".join(constructor_list)
+    c = "\n" + "\n".join(constructor_list)
     return f"""
 class TwilioBuilders {{
 
@@ -191,12 +191,16 @@ def fmt_package_layout(package_layout):
 
     lines = []
     for package, code_bits in package_layout.items():
-        code = _fmt_inside_package(code_bits)
+        code = "\n".join(code_bits)
         if package:
             pp = package.title()
-            value = f"""object {pp} {{{code}}}"""
+            value = f"""
+            object {pp} {{
+                {code}
+            }}
+            """
         else:
-            value = f"""{code}"""
+            value = f"""{code}\n"""
         lines.append(value)
     c = "\n".join(lines)
 
@@ -204,20 +208,6 @@ def fmt_package_layout(package_layout):
 object DSLTwiML {{
 {c}
 }}"""
-
-def _fmt_inside_package(code_bits):
-    return "\n".join(code_bits)
-
-
-def fmt_marked_classes(marked_class_list):
-    ''' The code after the extensions, representing DSL-marked versions of the classes '''
-    c = "\n        " + "\n        ".join(marked_class_list)
-
-    return f"""
-object Marked {{{c}
-}}
-    """
-
 
 def constructor_argstrings(args):
     ''' Produce the argstrings for the type. Args is a list of strings formatted
@@ -239,6 +229,27 @@ def constructor_argstrings(args):
     return ArgString(declare_argstring, consume_argstring)
 
 
+def refmt_kotlin(unformatted):
+    ''' This is a bad kotlin reformatter, but it works for the code that this generator outputs. '''
+
+    lines = [i.strip() for i in unformatted.split("\n")]
+    lines_out = []
+
+    indent_count = 0
+
+    for line in lines:
+
+        if line.endswith("}"):
+            indent_count -= 1
+
+        lines_out.append("    " * indent_count + line)
+
+        if line.endswith("{"):
+            indent_count += 1
+
+    return "\n".join(lines_out)
+
+
 class ArgString(namedtuple("ArgString", ("declare", "consume"))):
     pass
 
@@ -249,6 +260,12 @@ class TypeSpec(namedtuple("TypeSpec", ("package", "name"))):
     def qualified(self):
         sep = "." if self.package else ""
         return f"com.twilio.twiml.{self.package}{sep}{self.name}"
+
+    @property
+    def dsl_builder(self):
+        p = self.package.title()
+        sep = "." if p else ""
+        return f"DSLTwiML.{p}{sep}{self.name}"
 
 if __name__ == "__main__":
     __main__()
