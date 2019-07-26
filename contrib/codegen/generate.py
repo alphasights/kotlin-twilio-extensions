@@ -23,6 +23,8 @@ DATAFILE is a description of:
     the argument list for a constructor for <classname>'s builder class. Each element of the
     argument list is in the format "<argname>:<argtype>".
 <children-list> is a list of classnames, which are valid TwiML children of the given class.
+A classname may be "classname", which is the name of the class within the same package;
+or may be "package.classname", which specifies the class as a child of "package".
 
 
 This script will produce a full kotlin file, TwilioExtensions.kt, suitable for copying into IntelliJ.
@@ -56,11 +58,17 @@ def __main__():
     # Build out the constructors and acceptors dictionaries
     for package, types in builders.items():
         for typename, info in types.items():
-            imports.append(importer(package, typename))
+            typename = TypeName(package, typename)
+            imports.append(importer(typename))
             for constructor in info["constructors"]:
                 constructors[typename].append(constructor_argstrings(constructor))
             for acceptor in info["children"]:
-                acceptors[acceptor].append(typename)
+                q = acceptor.split(".")
+                if len(q) == 1:
+                    acceptor_package, acceptor_class = package, q[0]
+                else:
+                    acceptor_package, acceptor_class = q
+                acceptors[TypeName(acceptor_package, acceptor_class)].append(typename)
             packages[typename] = package
 
     # Code fragments for the constructor functions and the extension functions
@@ -75,7 +83,7 @@ def __main__():
             constructor_code.append(fun_constructor(typename, argstrings.declare, argstrings.consume))
             for acceptor in acceptors[typename]:
                 extension_code.append(fun_extension(typename, acceptor, argstrings.declare, argstrings.consume))
-        marked_class_code.append(class_marked_with_constructors(typename, packages[typename], _constructor))
+        marked_class_code.append(class_marked_with_constructors(typename, _constructor))
 
     imports.sort()
     constructor_code.sort()
@@ -115,16 +123,18 @@ def camel(a):
     return a[0].lower() + a[1:]
 
 
-def importer(package, typename):
+def importer(typename):
     ''' Return an import string for the given package/typename '''
-    package = package.strip()
-    return f"import com.twilio.twiml{package}.{typename}"
+    package = typename.package.strip()
+    sep = "." if package else ""
+    name = typename.name
+    return f"import com.twilio.twiml.{package}{sep}{name}"
 
 def fun_constructor(typename, declare, consume):
     ''' Build a constructor function for the given class '''
     sep = ", " if declare else ""
     return f"""
-    inline fun {camel(typename)}({declare}{sep}f: Takes<{typename}.Builder> = {{}}): {typename} = {typename}.Builder({consume}).apply(f).build()
+    inline fun {camel(typename.name)}({declare}{sep}f: Takes<Marked.{typename}.Builder> = {{}}): {typename} = Marked.{typename}.Builder({consume}).apply(f).build()
     """.strip()
 
 def fun_class_marked_constructor(typename, declare, consume):
@@ -137,17 +147,17 @@ def fun_extension(typename, acceptor, declare, consume):
     ''' Build an extension to construct a child under the given parent class '''
     sep = ", " if declare else ""
     return f"""
-    inline fun {acceptor}.Builder.{camel(typename)}({declare}{sep}f: Takes<{typename}.Builder> = {{}}): {acceptor}.Builder = this.{camel(typename)}(TwilioBuilders.{camel(typename)}({consume}{sep}f))
+    inline fun {acceptor}.Builder.{camel(typename.name)}({declare}{sep}f: Takes<Marked.{typename}.Builder> = {{}}): {acceptor}.Builder = this.{camel(typename.name)}(TwilioBuilders.{camel(typename.name)}({consume}{sep}f))
     """.strip()
 
-def class_marked_with_constructors(typename, package, constructors):
+def class_marked_with_constructors(typename, constructors):
     ''' Build a DSL-marked class to ensure TwiML verbs are appropriately restricted. '''
 
     constructor_code = "\n            ".join(fun_class_marked_constructor(typename, i, j) for (i, j) in constructors)
 
     return f"""
-    object {typename} {{
-        @TwimlMarker class Builder : com.twilio.twiml{package}.{typename}.Builder {{
+    object {typename.name} {{
+        @TwimlMarker class Builder : {typename.qualified}.Builder {{
             {constructor_code}
         }}
     }}"""
@@ -203,6 +213,17 @@ def constructor_argstrings(args):
 
 class ArgString(namedtuple("ArgString", ("declare", "consume"))):
     pass
+
+
+class TypeName(namedtuple("TypeName", ("package", "name"))):
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def qualified(self):
+        sep = "." if self.package else ""
+        return f"com.twilio.twiml.{self.package}{sep}{self.name}"
 
 if __name__ == "__main__":
     __main__()

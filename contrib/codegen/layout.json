@@ -3,13 +3,14 @@
     "VoiceResponse": {
       "constructors": [[]],
       "children": [
-          "Connect", "Dial", "Echo", "Enqueue", "Gather", "Hangup",
-          "Leave", "Pause", "Play", "Queue", "Record", "Redirect",
-          "Reject", "Say", "Sms"
+          "voice.Connect", "voice.Dial", "voice.Echo", "voice.Enqueue",
+          "voice.Gather", "voice.Hangup", "voice.Leave", "voice.Pause",
+          "voice.Play", "voice.Queue", "voice.Record", "voice.Redirect",
+          "voice.Reject", "voice.Say", "voice.Sms"
       ]
     }
   },
-  ".voice": {
+  "voice": {
     "Client": {
       "constructors": [["name:String"]],
       "children": []
