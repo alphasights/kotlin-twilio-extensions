@@ -52,24 +52,20 @@ def __main__():
     # n.b. acceptors is an inverted version of "children" from the data file.
     acceptors = defaultdict(list)
 
-    # The package name for the given type
-    packages = defaultdict(str)
-
     # Build out the constructors and acceptors dictionaries
     for package, types in builders.items():
         for typename, info in types.items():
-            typename = TypeName(package, typename)
-            imports.append(importer(typename))
+            typespec = TypeSpec(package, typename)
+            imports.append(importer(typespec))
             for constructor in info["constructors"]:
-                constructors[typename].append(constructor_argstrings(constructor))
+                constructors[typespec].append(constructor_argstrings(constructor))
             for acceptor in info["children"]:
                 q = acceptor.split(".")
                 if len(q) == 1:
                     acceptor_package, acceptor_class = package, q[0]
                 else:
                     acceptor_package, acceptor_class = q
-                acceptors[TypeName(acceptor_package, acceptor_class)].append(typename)
-            packages[typename] = package
+                acceptors[TypeSpec(acceptor_package, acceptor_class)].append(typespec)
 
     # Code fragments for the constructor functions and the extension functions
     # respectively
@@ -78,12 +74,12 @@ def __main__():
     marked_class_code = []
 
     # Build out the code fragments
-    for typename, _constructor in constructors.items():
+    for typespec, _constructor in constructors.items():
         for argstrings in _constructor:
-            constructor_code.append(fun_constructor(typename, argstrings.declare, argstrings.consume))
-            for acceptor in acceptors[typename]:
-                extension_code.append(fun_extension(typename, acceptor, argstrings.declare, argstrings.consume))
-        marked_class_code.append(class_marked_with_constructors(typename, _constructor))
+            constructor_code.append(fun_constructor(typespec, argstrings.declare, argstrings.consume))
+            for acceptor in acceptors[typespec]:
+                extension_code.append(fun_extension(typespec, acceptor, argstrings.declare, argstrings.consume))
+        marked_class_code.append(class_marked_with_constructors(typespec, _constructor))
 
     imports.sort()
     constructor_code.sort()
@@ -123,41 +119,41 @@ def camel(a):
     return a[0].lower() + a[1:]
 
 
-def importer(typename):
+def importer(typespec):
     ''' Return an import string for the given package/typename '''
-    package = typename.package.strip()
+    package = typespec.package.strip()
     sep = "." if package else ""
-    name = typename.name
+    name = typespec.name
     return f"import com.twilio.twiml.{package}{sep}{name}"
 
-def fun_constructor(typename, declare, consume):
+def fun_constructor(typespec, declare, consume):
     ''' Build a constructor function for the given class '''
     sep = ", " if declare else ""
     return f"""
-    inline fun {camel(typename.name)}({declare}{sep}f: Takes<Marked.{typename.name}.Builder> = {{}}): {typename.qualified} = Marked.{typename.name}.Builder({consume}).apply(f).build()
+    inline fun {camel(typespec.name)}({declare}{sep}f: Takes<Marked.{typespec.name}.Builder> = {{}}): {typespec.qualified} = Marked.{typespec.name}.Builder({consume}).apply(f).build()
     """.strip()
 
-def fun_class_marked_constructor(typename, declare, consume):
+def fun_class_marked_constructor(declare, consume):
     ''' Build a constructor function for the given class '''
     return f"""
     constructor ({declare}): super({consume})
     """.strip()
 
-def fun_extension(typename, acceptor, declare, consume):
+def fun_extension(typespec, acceptor, declare, consume):
     ''' Build an extension to construct a child under the given parent class '''
     sep = ", " if declare else ""
     return f"""
-    inline fun {acceptor.qualified}.Builder.{camel(typename.name)}({declare}{sep}f: Takes<Marked.{typename.name}.Builder> = {{}}): {acceptor.qualified}.Builder = this.{camel(typename.name)}(TwilioBuilders.{camel(typename.name)}({consume}{sep}f))
+    inline fun {acceptor.qualified}.Builder.{camel(typespec.name)}({declare}{sep}f: Takes<Marked.{typespec.name}.Builder> = {{}}): {acceptor.qualified}.Builder = this.{camel(typespec.name)}(TwilioBuilders.{camel(typespec.name)}({consume}{sep}f))
     """.strip()
 
-def class_marked_with_constructors(typename, constructors):
+def class_marked_with_constructors(typespec, constructors):
     ''' Build a DSL-marked class to ensure TwiML verbs are appropriately restricted. '''
 
-    constructor_code = "\n            ".join(fun_class_marked_constructor(typename, i, j) for (i, j) in constructors)
+    constructor_code = "\n            ".join(fun_class_marked_constructor(i, j) for (i, j) in constructors)
 
     return f"""
-    object {typename.name} {{
-        @TwimlMarker class Builder : {typename.qualified}.Builder {{
+    object {typespec.name} {{
+        @TwimlMarker class Builder : {typespec.qualified}.Builder {{
             {constructor_code}
         }}
     }}"""
@@ -215,7 +211,7 @@ class ArgString(namedtuple("ArgString", ("declare", "consume"))):
     pass
 
 
-class TypeName(namedtuple("TypeName", ("package", "name"))):
+class TypeSpec(namedtuple("TypeSpec", ("package", "name"))):
 
     @property
     def qualified(self):
