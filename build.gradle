@@ -9,6 +9,10 @@ repositories {
     mavenCentral()
 }
 
+def generatedSources = "$buildDir/generated-resources/main/"
+
+sourceSets.main.kotlin.srcDirs += generatedSources + "kotlin"
+
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     compile group: "com.twilio.sdk", name: "twilio", version: "7.27.0"
@@ -20,3 +24,20 @@ compileKotlin {
 compileTestKotlin {
     kotlinOptions.jvmTarget = "1.8"
 }
+
+
+task generate(type:Exec) {
+
+    def outputDir = generatedSources + "/kotlin/com/alphasights/kotlintwilio/"
+
+    doFirst {
+        mkdir(outputDir)
+    }
+
+    workingDir '.'
+
+    commandLine 'python3', 'contrib/codegen/generate.py', 'contrib/codegen/layout.json', outputDir + "boop.kt"
+
+}
+
+compileKotlin.dependsOn generate

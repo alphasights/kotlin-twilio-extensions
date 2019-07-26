@@ -2,7 +2,7 @@
 
 Basic code generator for Twilio Kotlin extensions.
 
-Invoked by calling `generate <DATAFILE.json>`
+Invoked by calling `generate <DATAFILE.json> <OUTPUT_FILE.kt>`
 
 DATAFILE is a description of:
 
@@ -41,6 +41,7 @@ from pprint import pprint
 def __main__():
 
     builders = json.load(open(sys.argv[1]))
+    output = open(sys.argv[2], "w") if len(sys.argv) > 2 else sys.stdout
 
     imports = []
     # Key-value mapping: Key = Builder to construct, value = list(arglist format)
@@ -77,24 +78,25 @@ def __main__():
     # Generate the code!
 
     # Imports go first
-    print("\nimport com.twilio.twiml.TwiML")
-    print("\n".join(imports) + "\n")
+    print("package com.alphasights.kotlintwilio", file=output)
+    print("\nimport com.twilio.twiml.TwiML", file=output)
+    print("\n".join(imports) + "\n", file=output)
 
     # Boilerplate code and type aliases
-    print(fmt_preamble())
+    print(fmt_preamble(), file=output)
 
     # The TwilioBuilders constructor namespace
-    print(fmt_constructors(constructor_code))
+    print(fmt_constructors(constructor_code), file=output)
 
     # The extenions themselves
-    print("\n".join(extension_code)+ "\n")
+    print("\n".join(extension_code)+ "\n", file=output)
 
     # Finally, a list of types that have been declared as a valid child,
     # but have not had code generated.
     missing = list(set(acceptors) - set(constructors))
     missing.sort()
-    print ("\n")
-    print(f"/** MISSING: {missing} */")
+    print("\n", file=output)
+    print(f"/** MISSING: {missing} */", file=output)
 
 
 def camel(a):
