@@ -134,7 +134,7 @@ def fun_constructor(typename, declare, consume):
     ''' Build a constructor function for the given class '''
     sep = ", " if declare else ""
     return f"""
-    inline fun {camel(typename.name)}({declare}{sep}f: Takes<Marked.{typename}.Builder> = {{}}): {typename} = Marked.{typename}.Builder({consume}).apply(f).build()
+    inline fun {camel(typename.name)}({declare}{sep}f: Takes<Marked.{typename.name}.Builder> = {{}}): {typename.qualified} = Marked.{typename.name}.Builder({consume}).apply(f).build()
     """.strip()
 
 def fun_class_marked_constructor(typename, declare, consume):
@@ -147,7 +147,7 @@ def fun_extension(typename, acceptor, declare, consume):
     ''' Build an extension to construct a child under the given parent class '''
     sep = ", " if declare else ""
     return f"""
-    inline fun {acceptor}.Builder.{camel(typename.name)}({declare}{sep}f: Takes<Marked.{typename}.Builder> = {{}}): {acceptor}.Builder = this.{camel(typename.name)}(TwilioBuilders.{camel(typename.name)}({consume}{sep}f))
+    inline fun {acceptor.qualified}.Builder.{camel(typename.name)}({declare}{sep}f: Takes<Marked.{typename.name}.Builder> = {{}}): {acceptor.qualified}.Builder = this.{camel(typename.name)}(TwilioBuilders.{camel(typename.name)}({consume}{sep}f))
     """.strip()
 
 def class_marked_with_constructors(typename, constructors):
@@ -216,9 +216,6 @@ class ArgString(namedtuple("ArgString", ("declare", "consume"))):
 
 
 class TypeName(namedtuple("TypeName", ("package", "name"))):
-
-    def __str__(self):
-        return self.name
 
     @property
     def qualified(self):
