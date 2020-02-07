@@ -1,6 +1,27 @@
+buildscript {
+    ext {
+        kotlinVersion = '1.3.30'
+        ktlintGradleVersion = '9.1.1'
+    }
+
+    repositories {
+        mavenCentral()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+
+    dependencies {
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}")
+        classpath("org.jlleitschuh.gradle:ktlint-gradle:${ktlintGradleVersion}")
+    }
+}
+
 plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.3.41'
 }
+
+apply plugin: 'org.jlleitschuh.gradle.ktlint'
 
 group 'com.alphasights'
 version '0.1-SNAPSHOT'

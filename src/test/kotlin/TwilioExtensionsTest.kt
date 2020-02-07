@@ -1,4 +1,4 @@
-import com.alphasights.kotlintwilio.TwilioBuilders
+import com.alphasights.kotlintwilio.DSLTwiML
 import com.alphasights.kotlintwilio.gather
 import com.alphasights.kotlintwilio.redirect
 import com.alphasights.kotlintwilio.say
@@ -9,13 +9,12 @@ import com.twilio.twiml.voice.Say
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
-
 class TwilioExtensionsTest {
 
     @Test
     fun testItWorks() {
 
-        val withExtensions = TwilioBuilders.voiceResponse {
+        val withExtensions = DSLTwiML.voiceResponse {
             gather {
                 say("Welcome to AlphaSights") {
                     voice(Say.Voice.POLLY_GERAINT)
@@ -36,7 +35,5 @@ class TwilioExtensionsTest {
                 .build()
 
         assertEquals(withExtensions.toXml().toString(), withoutExtensions.toXml().toString())
-
     }
-
 }

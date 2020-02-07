@@ -31,6 +31,8 @@ This script will produce a full kotlin file, TwilioExtensions.kt, suitable for c
 
 '''
 
+from __future__ import print_function
+
 import sys
 import json
 
@@ -99,7 +101,6 @@ def __main__():
 
     # Imports go first
     print("package com.alphasights.kotlintwilio", file=output)
-    print("\nimport com.twilio.twiml.TwiML", file=output)
     print("\n".join(imports) + "\n", file=output)
 
     # Boilerplate code and type aliases
@@ -109,13 +110,13 @@ def __main__():
     print(fmt_dsl_definition(package_layout_code), file=output)
 
     # The extenions
-    print("\n".join(extension_code)+ "\n", file=output)
+    print("\n".join(extension_code), file=output)
 
     # Finally, a list of types that have been declared as a valid child,
     # but have not had code generated.
     missing = list(set(acceptors) - set(constructors))
     missing.sort()
-    print("\n", file=output)
+    print("", file=output)
     print(f"/** MISSING: {missing} */", file=output)
 
     reformatted = refmt_kotlin(output.getvalue())
@@ -170,7 +171,7 @@ def fmt_preamble():
     return """
 typealias Takes<F> = F.() -> Unit
 @DslMarker annotation class TwimlMarker
-"""
+""".strip()
 
 def fmt_dsl_definition(package_layout):
     ''' The DSL definition itself '''
@@ -184,17 +185,16 @@ def fmt_dsl_definition(package_layout):
             object {pp} {{
                 {code}
             }}
-            """
+            """.strip() + "\n"
         else:
             value = f"""{code}\n"""
         lines.append(value)
-    c = "\n".join(lines)
+    c = "\n".join(lines).strip()
 
     return f"""
 object DSLTwiML {{
 {c}
 }}
-
 """
 
 def constructor_argstrings(args):
@@ -218,7 +218,9 @@ def constructor_argstrings(args):
 
 
 def refmt_kotlin(unformatted):
-    ''' This is a bad kotlin reformatter, but it works for the code that this generator outputs. '''
+    ''' This is a bad kotlin reformatter, but it works for the code that this generator outputs.
+    It also meets ktlint's specifications.
+    '''
 
     lines = [i.strip() for i in unformatted.split("\n")]
     lines_out = []
@@ -230,7 +232,10 @@ def refmt_kotlin(unformatted):
         if line.endswith("}"):
             indent_count -= 1
 
-        lines_out.append("    " * indent_count + line)
+        if line.strip():
+            lines_out.append("    " * indent_count + line)
+        else:
+            lines_out.append("")
 
         if line.endswith("{"):
             indent_count += 1
