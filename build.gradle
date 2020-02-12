@@ -22,6 +22,7 @@ plugins {
 }
 
 apply plugin: 'org.jlleitschuh.gradle.ktlint'
+apply plugin: 'maven'
 
 group 'com.alphasights'
 version '0.1-SNAPSHOT'
@@ -63,7 +64,7 @@ task generate(type:Exec) {
 
     workingDir '.'
 
-    commandLine 'python3', 'contrib/codegen/generate.py', 'contrib/codegen/layout.json', outputDir + "KotlinTwimlDsl.kt"
+    commandLine 'python', 'contrib/codegen/generate.py', 'contrib/codegen/layout.json', outputDir + "KotlinTwimlDsl.kt"
 
 }
 
