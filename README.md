@@ -1,5 +1,7 @@
 # Unofficial Kotlin Extensions for the Twilio Java SDK
 
+&copy; 2020 AlphaSights, Ltd.
+
 This is a library that makes the Twilio Java SDK feel more natural in Kotlin. It adds two features:
 
 * A domain-specific language for writing TwiML responses
@@ -7,7 +9,7 @@ This is a library that makes the Twilio Java SDK feel more natural in Kotlin. It
 
 The domain-specific language takes the Builder-heavy Twilio API:
 
-```
+```kotlin
 val voiceResponse = VoiceResponse.Builder()
         .gather(Gather.Builder()
                 .say(Say
@@ -24,7 +26,7 @@ val voiceResponse = VoiceResponse.Builder()
 
 and replaces it with something simpler:
 
-```
+```kotlin
 val voiceResponse = return DSLTwiML.voiceResponse {
   gather {
     say("Press 1 to be connected, otherwise, hang up") {
@@ -39,6 +41,7 @@ val voiceResponse = return DSLTwiML.voiceResponse {
 }
 ```
 
+Kotlin-style builder-block constructs are available for all TwiML constructs.
 
 ## Building
 
