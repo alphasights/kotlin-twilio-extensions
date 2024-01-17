@@ -114,8 +114,8 @@
     "Say": {
       "constructors": [[], ["message:String"]],
       "children": [
-        "SsmlBreak", "SsmlEmphasis", "SsmlLang", "SsmlP", "SsmlPhoneme",
-        "SsmlProsody","SsmlS", "SsmlSayAs", "SsmlSub", "SsmlW"
+        "break", "emphasis", "lang", "p", "phoneme",
+        "prosody","s", "sayAs", "sub", "w"
       ]
     },
     "Sim": {
