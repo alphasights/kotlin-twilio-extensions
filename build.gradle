@@ -38,7 +38,7 @@ sourceSets.main.kotlin.srcDirs += generatedSources + "kotlin"
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
-    compile group: "com.twilio.sdk", name: "twilio", version: "7.27.0"
+    compile group: "com.twilio.sdk", name: "twilio", version: "9.15.1"
     testImplementation('org.junit.jupiter:junit-jupiter:5.5.1')
 
 }
